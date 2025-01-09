@@ -13,7 +13,16 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
+// import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+
 import { useAuthenticator } from "@aws-amplify/ui-react";
+import { fetchAuthSession } from "aws-amplify/auth";
+import {
+  DynamoDBClient,
+  PutItemCommand,
+  ScanCommand,
+  UpdateItemCommand,
+} from "@aws-sdk/client-dynamodb";
 
 function generateShortCode() {
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -33,24 +42,99 @@ export default function StartGameComponent() {
   const [screenName, setScreenName] = useState(user.signInDetails?.loginId);
   const router = useRouter();
 
-  const handleGenerateCode = () => {
+  const handleGenerateCode = async () => {
     const newCode = generateShortCode();
-    setGeneratedCode(newCode);
-  };
 
-  const handleStartGame = (code: string) => {
-    if (code && screenName) {
-      router.push(
-        `/game/${code}?player=${encodeURIComponent(screenName)}&creator=true`
+    try {
+      const f = await fetchAuthSession();
+      console.log(f);
+      const ddbClient = new DynamoDBClient({
+        credentials: f.credentials,
+        region: "us-east-1",
+      });
+
+      const res = await ddbClient.send(
+        new ScanCommand({ TableName: "FourInARowGameData" })
       );
+      console.log(res);
+
+      setGeneratedCode(newCode);
+    } catch (err) {
+      console.log(err);
     }
   };
 
-  const handleJoinGame = (code: string) => {
+  const handleStartGame = async (code: string) => {
     if (code && screenName) {
-      router.push(
-        `/game/${code}?player=${encodeURIComponent(screenName)}&creator=false`
-      );
+      try {
+        const f = await fetchAuthSession();
+        console.log(f);
+        const ddbClient = new DynamoDBClient({
+          credentials: f.credentials,
+          region: "us-east-1",
+        });
+
+        const res = await ddbClient.send(
+          new PutItemCommand({
+            TableName: "FourInARowGameData",
+            Item: {
+              code: {
+                S: code,
+              },
+              player1: {
+                S: screenName,
+              },
+            },
+          })
+        );
+        console.log(res);
+
+        router.push(
+          `/game/${code}?player=${encodeURIComponent(screenName)}&creator=true`
+        );
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  };
+
+  const handleJoinGame = async (code: string) => {
+    if (code && screenName) {
+      try {
+        const f = await fetchAuthSession();
+        console.log(f);
+        const ddbClient = new DynamoDBClient({
+          credentials: f.credentials,
+          region: "us-east-1",
+        });
+
+        const res = await ddbClient.send(
+          new UpdateItemCommand({
+            TableName: "FourInARowGameData",
+            Key: {
+              code: {
+                S: code,
+              },
+            },
+            ExpressionAttributeNames: {
+              "#P2": "player2",
+            },
+            ExpressionAttributeValues: {
+              ":player2": {
+                S: screenName,
+              },
+            },
+            UpdateExpression: "SET #P2 = :player2",
+          })
+        );
+        console.log(res);
+
+        router.push(
+          `/game/${code}?player=${encodeURIComponent(screenName)}&creator=false`
+        );
+      } catch (err) {
+        console.log(err);
+      }
     }
   };
 

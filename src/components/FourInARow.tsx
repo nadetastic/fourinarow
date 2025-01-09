@@ -2,8 +2,13 @@
 
 import { useReducer, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  //useParams,
+  //useRouter
+  useSearchParams,
+} from "next/navigation";
 import { events } from "aws-amplify/data";
+import { useRouter } from "next/router";
 
 import {
   GameState,
@@ -23,10 +28,10 @@ const publishGameState = async (
   await events.post(`/game/${gameCode}`, gameState);
 };
 export function FourInARowComponent() {
-  const params = useParams();
+  // const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const gameCode = params.code as string;
+  const gameCode = router.query.code as string;
   const playerName = searchParams.get("player") || "Player 1";
   const isCreator = searchParams.get("creator") === "true";
 

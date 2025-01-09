@@ -2,7 +2,9 @@
 
 import { FourInARowComponent } from "@/components/FourInARow";
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+// import { useParams } from "next/navigation";
+import { useRouter } from "next/router";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,8 +18,9 @@ interface ChatMessage {
 }
 
 export default function GamePage() {
-  const params = useParams();
-  const gameCode = params?.code as string;
+  const { query } = useRouter();
+  console.log(query);
+  const gameCode = query.code as string;
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
